@@ -1,0 +1,61 @@
+.home-card {
+  background-image: url(https://cryptozombies.io/course/static/img/homecard@2x.png);
+  .zombie-char {
+    left: -6vh;
+    top: -27vh;
+    -webkit-transform: scale(0.4);
+    transform: scale(0.4);
+  }
+}
+
+.game-card {
+  height: 40vh;
+  width: 29vh;
+  background-size: 100%;
+  position: relative;
+}
+.zombie-parts {
+  position: relative;
+  margin-left: -2vh;
+  margin-top: 31vh;
+}
+
+.zombie-loading {
+  background: url(https://cryptozombies.io/course/static/img/zombierun.png) 0;
+  background-size: cover;
+  height: 287px;
+  width: 192px;
+  position: absolute;
+  left: 9vh;
+  -webkit-animation: play-data 0.7s steps(24) infinite;
+  animation: play-data 0.7s steps(24) infinite;
+}
+
+@keyframes play-data {
+  100% {
+    background-position: -4608px;
+  }
+}
+
+.zombie-card {
+  position: absolute;
+  left: 50%;
+  top: 73vh;
+  font-size: 30px;
+  width: 30vh;
+  margin-left: -15vh;
+  text-align: center;
+  text-transform: uppercase;
+  .card-header {
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  }
+}
+
+.hide-overflow-text {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}

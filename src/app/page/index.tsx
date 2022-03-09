@@ -4,6 +4,7 @@ import { useWallet } from '@senhub/providers'
 
 import { Row, Col, Typography, Button, Space } from 'antd'
 import IonIcon from 'shared/antd/ionicon'
+import Zombie from 'app/components/zombie'
 
 import { AppDispatch, AppState } from 'app/model'
 import { increaseCounter } from 'app/model/main.controller'
@@ -35,14 +36,52 @@ const Page = () => {
           <Typography.Title level={4}>Page</Typography.Title>
         </Space>
       </Col>
+      <Col>
+        <Button>Generate Zombie</Button>
+      </Col>
       <Col span={24}>
-        <Typography.Text>Address: {address}</Typography.Text>
-      </Col>
-      <Col>
-        <Typography.Text>Counter: {counter}</Typography.Text>
-      </Col>
-      <Col>
-        <Button onClick={increase}>Increase</Button>
+        <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32 }}>
+          <Col
+            className="gutter-row"
+            lg={{ span: 6 }}
+            md={{ span: 12 }}
+            xs={{ span: 24 }}
+          >
+            <Zombie></Zombie>
+          </Col>
+          <Col
+            className="gutter-row"
+            lg={{ span: 6 }}
+            md={{ span: 12 }}
+            xs={{ span: 24 }}
+          >
+            <Zombie></Zombie>
+          </Col>
+          <Col
+            className="gutter-row"
+            lg={{ span: 6 }}
+            md={{ span: 12 }}
+            xs={{ span: 24 }}
+          >
+            <Zombie></Zombie>
+          </Col>
+          <Col
+            className="gutter-row"
+            lg={{ span: 6 }}
+            md={{ span: 12 }}
+            xs={{ span: 24 }}
+          >
+            <Zombie></Zombie>
+          </Col>
+          <Col
+            className="gutter-row"
+            lg={{ span: 6 }}
+            md={{ span: 12 }}
+            xs={{ span: 24 }}
+          >
+            <Zombie></Zombie>
+          </Col>
+        </Row>
       </Col>
     </Row>
   )
