@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useWallet, useAccount } from '@senhub/providers'
 import { utils } from '@senswap/sen-js'
 
-import { Row, Col, Typography, Button, Space, Card } from 'antd'
+import { Row, Col, Typography, Button, Space, Card, Input } from 'antd'
 import IonIcon from 'shared/antd/ionicon'
 
 import { AppDispatch, AppState } from 'app/model'
@@ -19,6 +19,11 @@ const {
   manifest: { appId },
 } = configs
 
+interface AccountInfo {
+  accountAddress: any
+  balance: any
+}
+
 const Page = () => {
   const {
     wallet: { address },
@@ -27,6 +32,7 @@ const Page = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { zombies } = useSelector((state: AppState) => state.zombie)
   const [balance, setBalance] = useState(0)
+  const [listAccount, setListAccount] = useState<AccountInfo[]>([])
 
   const pdb = useMemo(() => createPDB(address, appId), [address])
   const generate = useCallback(async () => {
@@ -37,37 +43,42 @@ const Page = () => {
     dispatch(generateZombie({ newZombie }))
   }, [dispatch])
 
-  // const getBlanceValue = useCallback(
-  //   async (accountAddress: string) => {
-  //     let mintData = await window.sentre.splt.getMintData(
-  //       accounts[accountAddress].mint,
-  //     )
-  //     let accountData = await window.sentre.splt.getAccountData(accountAddress)
-  //     return Number(utils.undecimalize(accountData.amount, mintData.decimals))
-  //   },
-  //   [accounts],
-  // )
+  const getBlanceValue = useCallback(
+    async (accountAddress: string) => {
+      let mintData = await window.sentre.splt.getMintData(
+        accounts[accountAddress].mint,
+      )
+      let accountData = await window.sentre.splt.getAccountData(accountAddress)
+      return Number(utils.undecimalize(accountData.amount, mintData.decimals))
+    },
+    [accounts],
+  )
 
   const getAccountData = useCallback(async () => {
     // const nodeUrl = 'https://api.devnet.solana.com'
     // const lamports = new Lamports(nodeUrl)
     let balance = await window.sentre.lamports.getLamports(address)
     setBalance(balance)
-    console.log('balance: ', balance)
-    console.log('accounts: ', accounts)
+    // console.log('balance: ', balance)
+    // console.log('accounts: ', accounts)
+    let listAccountInfo: AccountInfo[] = []
     for (const accountAddress in accounts) {
-      let mintData = await window.sentre.splt.getMintData(
-        accounts[accountAddress].mint,
-      )
-      let accountData = await window.sentre.splt.getAccountData(accountAddress)
-      console.log('accountData: ', accountAddress, accountData)
-      console.log('minData: ', accounts[accountAddress].mint, mintData)
-      console.log(
-        'Balance mint: ',
-        Number(utils.undecimalize(accountData.amount, mintData.decimals)),
-      )
+      // let mintData = await window.sentre.splt.getMintData(
+      //   accounts[accountAddress].mint,
+      // )
+      // let accountData = await window.sentre.splt.getAccountData(accountAddress)
+      // console.log('accountData: ', accountAddress, accountData)
+      // console.log('minData: ', accounts[accountAddress].mint, mintData)
+      // console.log('listAccount: ', listAccount)
+
+      let accountInfo = {
+        accountAddress: accountAddress,
+        balance: await getBlanceValue(accountAddress),
+      }
+      listAccountInfo = [...listAccountInfo, accountInfo]
     }
-  }, [address, accounts])
+    setListAccount(listAccountInfo)
+  }, [address, accounts, getBlanceValue])
 
   useEffect(() => {
     if (pdb) pdb.setItem('zombies', zombies)
@@ -94,16 +105,29 @@ const Page = () => {
             <Col span={24}>
               <Typography.Text>Lamports: {balance}</Typography.Text>
             </Col>
-            {accounts &&
-              Object.keys(accounts).map((accountAddress, index) => (
+            {listAccount &&
+              listAccount.map((account, index) => (
                 <div key={index}>
                   <Col span={24}>
                     <Typography.Text>
-                      Account Address: {accountAddress}
+                      Account Address: {account.accountAddress}
                     </Typography.Text>
                   </Col>
                   <Col span={24} key={index}>
-                    <Typography.Text>Amount:</Typography.Text>
+                    <Typography.Text>Amount: {account.balance}</Typography.Text>
+                  </Col>
+                  <Col span={24}>
+                    <Typography.Text>Receiver Address</Typography.Text>
+                  </Col>
+
+                  <Col span={24}>
+                    <Space>
+                      <Input
+                        size="large"
+                        placeholder={`${address.substring(0, 12)}...`}
+                      />
+                      <Button>Transfer</Button>
+                    </Space>
                   </Col>
                 </div>
               ))}
