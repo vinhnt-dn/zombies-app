@@ -37,16 +37,16 @@ const Page = () => {
     dispatch(generateZombie({ newZombie }))
   }, [dispatch])
 
-  const getBlanceValue = useCallback(
-    async (accountAddress: string) => {
-      let mintData = await window.sentre.splt.getMintData(
-        accounts[accountAddress].mint,
-      )
-      let accountData = await window.sentre.splt.getAccountData(accountAddress)
-      return Number(utils.undecimalize(accountData.amount, mintData.decimals))
-    },
-    [accounts],
-  )
+  // const getBlanceValue = useCallback(
+  //   async (accountAddress: string) => {
+  //     let mintData = await window.sentre.splt.getMintData(
+  //       accounts[accountAddress].mint,
+  //     )
+  //     let accountData = await window.sentre.splt.getAccountData(accountAddress)
+  //     return Number(utils.undecimalize(accountData.amount, mintData.decimals))
+  //   },
+  //   [accounts],
+  // )
 
   const getAccountData = useCallback(async () => {
     // const nodeUrl = 'https://api.devnet.solana.com'
