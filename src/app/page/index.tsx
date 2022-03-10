@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useWallet } from '@senhub/providers'
+import { useWallet, useAccount } from '@senhub/providers'
+import { utils } from '@senswap/sen-js'
 
-import { Row, Col, Typography, Button, Space } from 'antd'
+import { Row, Col, Typography, Button, Space, Card } from 'antd'
 import IonIcon from 'shared/antd/ionicon'
 
 import { AppDispatch, AppState } from 'app/model'
@@ -22,20 +23,54 @@ const Page = () => {
   const {
     wallet: { address },
   } = useWallet()
+  const { accounts } = useAccount()
   const dispatch = useDispatch<AppDispatch>()
   const { zombies } = useSelector((state: AppState) => state.zombie)
+  const [balance, setBalance] = useState(0)
 
   const pdb = useMemo(() => createPDB(address, appId), [address])
-  const generate = useCallback(() => {
+  const generate = useCallback(async () => {
     const newZombie: ZombieModel = {
       id: Math.random(),
       name: 'Test',
     }
-    console.log('Click', newZombie)
     dispatch(generateZombie({ newZombie }))
   }, [dispatch])
+
+  const getBlanceValue = useCallback(
+    async (accountAddress: string) => {
+      let mintData = await window.sentre.splt.getMintData(
+        accounts[accountAddress].mint,
+      )
+      let accountData = await window.sentre.splt.getAccountData(accountAddress)
+      return Number(utils.undecimalize(accountData.amount, mintData.decimals))
+    },
+    [accounts],
+  )
+
+  const getAccountData = useCallback(async () => {
+    // const nodeUrl = 'https://api.devnet.solana.com'
+    // const lamports = new Lamports(nodeUrl)
+    let balance = await window.sentre.lamports.getLamports(address)
+    setBalance(balance)
+    console.log('balance: ', balance)
+    console.log('accounts: ', accounts)
+    for (const accountAddress in accounts) {
+      let mintData = await window.sentre.splt.getMintData(
+        accounts[accountAddress].mint,
+      )
+      let accountData = await window.sentre.splt.getAccountData(accountAddress)
+      console.log('accountData: ', accountAddress, accountData)
+      console.log('minData: ', accounts[accountAddress].mint, mintData)
+      console.log(
+        'Balance mint: ',
+        Number(utils.undecimalize(accountData.amount, mintData.decimals)),
+      )
+    }
+  }, [address, accounts])
+
   useEffect(() => {
-    if (pdb) pdb.setItem('counter', zombies)
+    if (pdb) pdb.setItem('zombies', zombies)
   }, [pdb, zombies])
 
   return (
@@ -45,6 +80,38 @@ const Page = () => {
           <IonIcon name="newspaper-outline" />
           <Typography.Title level={4}>Page</Typography.Title>
         </Space>
+      </Col>
+      <Col span={24}>
+        <Card className="card-page card-sen-test scrollbar">
+          <Row gutter={[24, 24]} align="middle">
+            {/* Header */}
+            <Col flex="auto">
+              <Typography.Title level={4}>Sen Test</Typography.Title>
+            </Col>
+            <Col span={24}>
+              <Typography.Text>Address: {address}</Typography.Text>
+            </Col>
+            <Col span={24}>
+              <Typography.Text>Lamports: {balance}</Typography.Text>
+            </Col>
+            {accounts &&
+              Object.keys(accounts).map((accountAddress, index) => (
+                <div key={index}>
+                  <Col span={24}>
+                    <Typography.Text>
+                      Account Address: {accountAddress}
+                    </Typography.Text>
+                  </Col>
+                  <Col span={24} key={index}>
+                    <Typography.Text>Amount:</Typography.Text>
+                  </Col>
+                </div>
+              ))}
+          </Row>
+        </Card>
+      </Col>
+      <Col>
+        <Button onClick={getAccountData}>Get account data</Button>
       </Col>
       <Col>
         <Button onClick={generate}>Generate Zombie</Button>

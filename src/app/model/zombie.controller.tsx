@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import Zombie from 'app/components/zombie'
 
 /**
  * Interface & Utility
