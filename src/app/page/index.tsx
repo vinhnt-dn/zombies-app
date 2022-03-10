@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useWallet, useAccount } from '@senhub/providers'
 import { utils } from '@senswap/sen-js'
+import { explorer } from 'shared/util'
 
-import { Row, Col, Typography, Button, Space, Card, Input } from 'antd'
+import { Row, Col, Typography, Button, Space, Card, Input, Spin } from 'antd'
 import IonIcon from 'shared/antd/ionicon'
 
 import { AppDispatch, AppState } from 'app/model'
@@ -14,71 +15,132 @@ import {
 import configs from 'app/configs'
 import { createPDB } from 'shared/pdb'
 import Zombie from 'app/components/zombie'
+import NumericInput from 'shared/antd/numericInput'
 
 const {
   manifest: { appId },
 } = configs
 
 interface AccountInfo {
-  accountAddress: any
-  balance: any
+  accountAddress: string
+  balance: number
+  mint: string
+  decimals: number
 }
 
 const Page = () => {
   const {
     wallet: { address },
   } = useWallet()
+
   const { accounts } = useAccount()
   const dispatch = useDispatch<AppDispatch>()
   const { zombies } = useSelector((state: AppState) => state.zombie)
   const [balance, setBalance] = useState(0)
   const [listAccount, setListAccount] = useState<AccountInfo[]>([])
-
+  const [listAmountTransfer, setListAmountTransfer] = useState(Object)
+  const [listDstAddressTransfer, setListDstAddressTransfer] = useState(Object)
+  const [listLoading, setListLoading] = useState(Object)
   const pdb = useMemo(() => createPDB(address, appId), [address])
+
   const generate = useCallback(async () => {
+    let zombieID = Math.floor(Math.random() * 101)
     const newZombie: ZombieModel = {
-      id: Math.random(),
-      name: 'Test',
+      id: zombieID,
+      name: 'Zombie: ' + zombieID,
     }
     dispatch(generateZombie({ newZombie }))
   }, [dispatch])
 
-  const getBlanceValue = useCallback(
+  const getInfoAccount = useCallback(
     async (accountAddress: string) => {
       let mintData = await window.sentre.splt.getMintData(
         accounts[accountAddress].mint,
       )
       let accountData = await window.sentre.splt.getAccountData(accountAddress)
-      return Number(utils.undecimalize(accountData.amount, mintData.decimals))
+      return {
+        accountAddress: accountAddress,
+        balance: Number(
+          utils.undecimalize(accountData.amount, mintData.decimals),
+        ),
+        mint: accounts[accountAddress].mint,
+        decimals: mintData.decimals,
+      }
     },
     [accounts],
   )
 
   const getAccountData = useCallback(async () => {
-    // const nodeUrl = 'https://api.devnet.solana.com'
-    // const lamports = new Lamports(nodeUrl)
     let balance = await window.sentre.lamports.getLamports(address)
     setBalance(balance)
-    // console.log('balance: ', balance)
-    // console.log('accounts: ', accounts)
     let listAccountInfo: AccountInfo[] = []
     for (const accountAddress in accounts) {
-      // let mintData = await window.sentre.splt.getMintData(
-      //   accounts[accountAddress].mint,
-      // )
-      // let accountData = await window.sentre.splt.getAccountData(accountAddress)
-      // console.log('accountData: ', accountAddress, accountData)
-      // console.log('minData: ', accounts[accountAddress].mint, mintData)
-      // console.log('listAccount: ', listAccount)
-
-      let accountInfo = {
-        accountAddress: accountAddress,
-        balance: await getBlanceValue(accountAddress),
-      }
+      let accountInfo = await getInfoAccount(accountAddress)
       listAccountInfo = [...listAccountInfo, accountInfo]
     }
+
     setListAccount(listAccountInfo)
-  }, [address, accounts, getBlanceValue])
+  }, [address, accounts, getInfoAccount])
+
+  const onChangeAmount = (value: any, accountAddress: string) => {
+    let listAmountAddress = {
+      ...listAmountTransfer,
+      [`${accountAddress}`]: value,
+    }
+    setListAmountTransfer(listAmountAddress)
+  }
+
+  const onChangeDstAddress = (event: any, accountAddress: string) => {
+    let listDstAddress = {
+      ...listDstAddressTransfer,
+      [`${accountAddress}`]: event.target.value,
+    }
+    setListDstAddressTransfer(listDstAddress)
+  }
+
+  const transfer = async (account: AccountInfo) => {
+    setListLoading({ [`${account.accountAddress}`]: true })
+    try {
+      const { splt } = window.sentre
+      const wallet: any = window.sentre.wallet
+      const amountTransfer = utils.decimalize(
+        listAmountTransfer[account.accountAddress],
+        account.decimals,
+      )
+      const dstAssociatedAddr = await splt.deriveAssociatedAddress(
+        listDstAddressTransfer[account.accountAddress],
+        account.mint,
+      )
+
+      console.log(
+        'Data transfer: ',
+        amountTransfer,
+        account.accountAddress,
+        dstAssociatedAddr,
+        wallet,
+      )
+
+      const { txId } = await splt.transfer(
+        amountTransfer,
+        account.accountAddress,
+        dstAssociatedAddr,
+        wallet,
+      )
+      setListLoading({ [`${account.accountAddress}`]: false })
+      window.open(explorer(txId), '_blank')
+      window.notify({
+        type: 'success',
+        description: 'Transfer',
+      })
+    } catch (error: any) {
+      window.notify({
+        type: 'error',
+        description: error.message,
+      })
+    } finally {
+      setListLoading({ [`${account.accountAddress}`]: false })
+    }
+  }
 
   useEffect(() => {
     if (pdb) pdb.setItem('zombies', zombies)
@@ -107,29 +169,52 @@ const Page = () => {
             </Col>
             {listAccount &&
               listAccount.map((account, index) => (
-                <div key={index}>
-                  <Col span={24}>
-                    <Typography.Text>
-                      Account Address: {account.accountAddress}
-                    </Typography.Text>
-                  </Col>
-                  <Col span={24} key={index}>
-                    <Typography.Text>Amount: {account.balance}</Typography.Text>
-                  </Col>
-                  <Col span={24}>
-                    <Typography.Text>Receiver Address</Typography.Text>
-                  </Col>
-
-                  <Col span={24}>
-                    <Space>
-                      <Input
-                        size="large"
-                        placeholder={`${address.substring(0, 12)}...`}
-                      />
-                      <Button>Transfer</Button>
-                    </Space>
-                  </Col>
-                </div>
+                <Col
+                  xl={{ span: 12 }}
+                  lg={{ span: 12 }}
+                  md={{ span: 12 }}
+                  xs={{ span: 24 }}
+                  key={index}
+                >
+                  <Spin
+                    size="small"
+                    spinning={listLoading[account.accountAddress] || false}
+                  >
+                    <Col span={24}>
+                      <Typography.Text>
+                        Account Address: {account.accountAddress}
+                      </Typography.Text>
+                    </Col>
+                    <Col span={24} key={index}>
+                      <Typography.Text>
+                        Amount: {account.balance}
+                      </Typography.Text>
+                    </Col>
+                    <Col span={24}>
+                      <Typography.Text>Receiver Address</Typography.Text>
+                    </Col>
+                    <Col span={24}>
+                      <Space>
+                        <Input
+                          size="large"
+                          placeholder={`${address.substring(0, 12)}...`}
+                          onChange={(event) =>
+                            onChangeDstAddress(event, account.accountAddress)
+                          }
+                        />
+                        <NumericInput
+                          placeholder="0"
+                          onValue={(event) =>
+                            onChangeAmount(event, account.accountAddress)
+                          }
+                        />
+                        <Button onClick={() => transfer(account)}>
+                          Transfer
+                        </Button>
+                      </Space>
+                    </Col>
+                  </Spin>
+                </Col>
               ))}
           </Row>
         </Card>
